@@ -177,117 +177,30 @@ class JobServeAutomation:
     def search_jobs(self):
         """Navigate to job search and set up search criteria"""
         try:
-            # Navigate directly to job search page with search parameters
-            search_url = "https://www.jobserve.com/gb/en/JobSearch.aspx"
-            self.driver.get(search_url)
-            time.sleep(5)
+            # Navigate to job search page
+            self.driver.get("https://www.jobserve.com/gb/en/JobSearch.aspx")
+            time.sleep(3)
             
-            # Close any modal overlays that might be present
-            self.close_modal_overlays()
-            
-            # Check if we're on a search results page
+            # Check if we're on a search results page already
             if "JobSearch.aspx" in self.driver.current_url:
-                self.logger.info("Successfully navigated to job search page")
-                
-                # Check if there are already search results
-                page_source = self.driver.page_source.lower()
-                if "jobs for" in page_source or "apply" in page_source:
-                    self.logger.info("Found existing search results")
-                    return True
-                
-                # If no results, try to perform a search
-                return self.perform_job_search()
+                self.logger.info("Already on job search page")
+                return True
             
-            self.logger.warning("Could not access job search page properly")
-            return False
+            # Look for job search link
+            job_search_links = self.driver.find_elements(By.XPATH, 
+                "//a[contains(text(), 'Job Search') or contains(@href, 'JobSearch')]")
+            
+            if job_search_links:
+                job_search_links[0].click()
+                time.sleep(3)
+                self.logger.info("Navigated to job search")
+                return True
+            
+            self.logger.warning("Could not find job search, but continuing")
+            return True
             
         except Exception as e:
             self.logger.error(f"Error in job search navigation: {str(e)}")
-            # Try alternative approach
-            return self.alternative_job_search()
-    
-    def close_modal_overlays(self):
-        """Close any modal overlays that might be blocking interactions"""
-        try:
-            # Look for common modal close buttons
-            close_selectors = [
-                "//button[contains(@class, 'close')]",
-                "//a[contains(@class, 'close')]",
-                "//div[contains(@class, 'close')]",
-                "//span[contains(@class, 'close')]",
-                "//button[contains(text(), '×')]",
-                "//button[contains(text(), 'Close')]"
-            ]
-            
-            for selector in close_selectors:
-                close_buttons = self.driver.find_elements(By.XPATH, selector)
-                for button in close_buttons:
-                    try:
-                        if button.is_displayed():
-                            self.driver.execute_script("arguments[0].click();", button)
-                            time.sleep(1)
-                            self.logger.info("Closed modal overlay")
-                    except:
-                        continue
-            
-            # Remove overlay divs with JavaScript
-            self.driver.execute_script("""
-                var overlays = document.querySelectorAll('.ui-widget-overlay, .modal-backdrop, .overlay');
-                for (var i = 0; i < overlays.length; i++) {
-                    overlays[i].remove();
-                }
-            """)
-            
-        except Exception as e:
-            self.logger.warning(f"Error closing modal overlays: {str(e)}")
-    
-    def perform_job_search(self):
-        """Perform job search with criteria"""
-        try:
-            # Look for search form elements
-            keyword_inputs = self.driver.find_elements(By.CSS_SELECTOR, 
-                "input[name*='keyword'], input[name*='search'], input[type='text']")
-            
-            if keyword_inputs:
-                keyword_inputs[0].clear()
-                keyword_inputs[0].send_keys(self.search_criteria.keywords)
-                
-                # Look for location input
-                location_inputs = self.driver.find_elements(By.CSS_SELECTOR, 
-                    "input[name*='location'], input[name*='where']")
-                
-                if location_inputs:
-                    location_inputs[0].clear()
-                    location_inputs[0].send_keys(self.search_criteria.location)
-                
-                # Submit search
-                search_buttons = self.driver.find_elements(By.CSS_SELECTOR, 
-                    "input[type='submit'], button[type='submit'], button[contains(text(), 'Search')]")
-                
-                if search_buttons:
-                    self.driver.execute_script("arguments[0].click();", search_buttons[0])
-                    time.sleep(5)
-                    return True
-            
-            return True  # Continue even if search form not found
-            
-        except Exception as e:
-            self.logger.warning(f"Error performing job search: {str(e)}")
-            return True
-    
-    def alternative_job_search(self):
-        """Alternative approach to access job search"""
-        try:
-            # Try the search URL with parameters
-            search_url = f"https://www.jobserve.com/gb/en/JobSearch.aspx?shid=95B145B5415422FF864A&js=1"
-            self.driver.get(search_url)
-            time.sleep(5)
-            
-            self.logger.info("Used alternative job search approach")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Alternative job search failed: {str(e)}")
             return False
     
     def get_job_listings(self) -> List[Dict]:
@@ -666,19 +579,19 @@ class JobServeAutomation:
 
 def main():
     """Main function for testing"""
-    import config
+    from config import *
     
     credentials = UserCredentials(
-        email=config.JOBSERVE_EMAIL,
-        password=config.JOBSERVE_PASSWORD,
-        first_name=config.FIRST_NAME,
-        last_name=config.LAST_NAME,
-        cv_path=config.CV_PATH
+        email=JOBSERVE_EMAIL,
+        password=JOBSERVE_PASSWORD,
+        first_name=FIRST_NAME,
+        last_name=LAST_NAME,
+        cv_path=CV_PATH
     )
     
     search_criteria = JobSearchCriteria(
-        keywords=config.SEARCH_KEYWORDS,
-        location=config.SEARCH_LOCATION,
+        keywords=SEARCH_KEYWORDS,
+        location=SEARCH_LOCATION,
         max_applications=2  # Test mode
     )
     
