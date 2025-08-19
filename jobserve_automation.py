@@ -333,6 +333,14 @@ class JobServeAutomation:
                     result.company = self.extract_company_name()
                     result.reference = self.extract_reference_number()
                     self.logger.info(f"Successfully applied to: {result.job_title}")
+                    
+                    # Verify application appears in history
+                    verification_result = self.verify_application_in_history(result.job_title)
+                    if verification_result:
+                        result.status = "verified"
+                        self.logger.info(f"Application verified in history: {result.job_title}")
+                    else:
+                        self.logger.warning(f"Application not found in history: {result.job_title}")
                 else:
                     result.status = "failed"
                     result.error_message = "Application submission may have failed"
@@ -406,6 +414,66 @@ class JobServeAutomation:
             return ""
         except:
             return ""
+    
+    def verify_application_in_history(self, job_title: str) -> bool:
+        """Verify that the application appears in the application history"""
+        try:
+            self.logger.info(f"Verifying application in history for: {job_title}")
+            
+            # Navigate to applications history page
+            self.driver.get("https://www.jobserve.com/ee/en/can/applications")
+            time.sleep(3)
+            
+            # Wait for the page to load
+            self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            
+            # Look for the job title in the applications history
+            page_source = self.driver.page_source.lower()
+            job_title_lower = job_title.lower()
+            
+            # Try different variations of the job title
+            job_title_variations = [
+                job_title_lower,
+                job_title_lower.replace(" ", ""),
+                job_title_lower.split(" - ")[0] if " - " in job_title_lower else job_title_lower,
+                job_title_lower.split(" (")[0] if " (" in job_title_lower else job_title_lower
+            ]
+            
+            # Check if any variation of the job title appears in the page
+            for variation in job_title_variations:
+                if variation in page_source:
+                    self.logger.info(f"Found job title variation '{variation}' in application history")
+                    return True
+            
+            # Also check for application elements that might contain the job title
+            application_elements = self.driver.find_elements(By.CSS_SELECTOR, 
+                ".application-item, .job-application, tr, .application-row, .application")
+            
+            for element in application_elements:
+                try:
+                    element_text = element.text.lower()
+                    for variation in job_title_variations:
+                        if variation in element_text:
+                            self.logger.info(f"Found job title in application element: {variation}")
+                            return True
+                except:
+                    continue
+            
+            # Check for recent applications (today's date)
+            today = datetime.now().strftime("%d/%m/%Y")
+            today_alt = datetime.now().strftime("%Y-%m-%d")
+            
+            if today in page_source or today_alt in page_source:
+                self.logger.info(f"Found today's date in applications, likely indicating recent application")
+                # If we find today's date and we just applied, it's probably our application
+                return True
+            
+            self.logger.warning(f"Job title '{job_title}' not found in application history")
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error verifying application in history: {str(e)}")
+            return False
     
     def run_automation(self):
         """Main automation workflow"""

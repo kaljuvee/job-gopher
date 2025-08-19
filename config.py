@@ -15,8 +15,8 @@ JOBSERVE_PASSWORD = os.getenv("JOBSERVE_PASSWORD", "Toomesilane2$2")
 FIRST_NAME = "Julian"
 LAST_NAME = "Kaljuvee"
 
-# CV Path - Update this to point to your CV file
-CV_PATH = os.getenv("CV_PATH", "/home/ubuntu/upload/kaljuvee-julian-ds-long-2025.pdf")
+# CV Path - Leave empty since CV is already stored on JobServe
+CV_PATH = os.getenv("CV_PATH", "")
 
 # Job Search Criteria
 SEARCH_KEYWORDS = "data scientist, AI engineer"

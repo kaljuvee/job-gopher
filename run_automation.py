@@ -30,11 +30,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate CV path
-    if not Path(config.CV_PATH).exists():
-        print(f"❌ CV file not found at: {config.CV_PATH}")
-        print("Please update the CV_PATH in config.py or set the CV_PATH environment variable")
-        return 1
+    # Validate CV path (optional since CV may be stored on JobServe)
+    if config.CV_PATH and not Path(config.CV_PATH).exists():
+        print(f"⚠️  CV file not found at: {config.CV_PATH}")
+        print("Continuing anyway - assuming CV is already stored on JobServe")
+    elif config.CV_PATH:
+        print(f"✅ CV file found: {config.CV_PATH}")
+    else:
+        print("ℹ️  No CV path specified - assuming CV is already stored on JobServe")
     
     # Validate credentials
     if config.JOBSERVE_EMAIL == "your_email@example.com":
